@@ -26,6 +26,9 @@ def test_w2_validation_and_warnings():
 def test_dependent_eligibility_rules():
     young = Dependent(relationship="Daughter", age=8, ssn="555-00-1111")
     assert young.qualifies_ctc and young.is_eitc_qualifying_child and not young.qualifies_odc
+    # A qualifying child under 17 gets the CTC even if no SSN was typed in chat.
+    no_ssn = Dependent(relationship="Son", age=6)
+    assert no_ssn.qualifies_ctc and not no_ssn.qualifies_odc
     teen = Dependent(relationship="Son", age=17, ssn="555-00-2222")
     assert not teen.qualifies_ctc and teen.qualifies_odc  # 17 -> ODC, not CTC
     student = Dependent(relationship="Son", age=20, is_full_time_student=True, ssn="x")

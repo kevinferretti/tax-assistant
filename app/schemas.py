@@ -141,9 +141,13 @@ class Dependent(BaseModel):
 
     @property
     def qualifies_ctc(self) -> bool:
-        # Child Tax Credit: qualifying child under 17 with an SSN.
+        # Child Tax Credit: qualifying child under 17. (The IRS also requires the
+        # child to have an SSN; in this conversational flow we don't spend a
+        # question collecting each child's SSN, so we assume qualifying children
+        # have one — the normal case — rather than silently downgrading a $2,200
+        # CTC to a $500 ODC.)
         return (self._is_child_relationship and self.age is not None
-                and self.age < 17 and bool(self.ssn))
+                and self.age < 17)
 
     @property
     def qualifies_odc(self) -> bool:
