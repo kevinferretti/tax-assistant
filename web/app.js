@@ -8,6 +8,8 @@ const sendBtn = $("send");
 
 let hasW2 = false;
 let streaming = false;
+// Start a fresh return on every page load so a refresh never reuses a prior session.
+let sessionReady = fetch("/api/session/new", { method: "POST" }).catch(() => {});
 
 // ---------- helpers ----------
 function escapeHtml(s) {
@@ -68,6 +70,7 @@ function removeUploadCard() { const c = $("upload-card"); if (c) c.remove(); }
 async function uploadW2(file) {
   removeUploadCard();
   const working = addWorking("Reading your W-2…");
+  await sessionReady;
   const fd = new FormData();
   fd.append("file", file);
   const r = await fetch("/api/upload", { method: "POST", body: fd });
@@ -78,6 +81,7 @@ async function uploadW2(file) {
 async function useSample() {
   removeUploadCard();
   const working = addWorking("Loading a sample W-2…");
+  await sessionReady;
   await fetch("/api/use-sample", { method: "POST" });
   working.remove();
   onW2Ready();

@@ -59,6 +59,14 @@ def health():
     return {"status": "ok"}
 
 
+@app.post("/api/session/new")
+def new_session():
+    """Start a fresh return. The UI calls this on every page load so a refresh or a
+    returning visitor never accumulates a second W-2 onto a prior session."""
+    session = STORE.create()
+    return _with_cookie(JSONResponse({"ok": True, "session": session.id[:8]}), session.id)
+
+
 # ---- W-2 intake -------------------------------------------------------------
 def _to_image(data: bytes, content_type: str, filename: str) -> tuple[bytes, str]:
     """Normalize an upload to an image the vision model can read (PDF -> PNG)."""
