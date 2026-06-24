@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Form — a kinder way to file your 1040</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧾</text></svg>" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">Form</span>
+      <span class="brand-tag">a calmer way to file your 2025 return</span>
+    </div>
+    <div class="budget" id="budget" title="The agent is limited to 5 questions.">
+      <span id="budget-dots"></span>
+      <span class="budget-label" id="budget-label">5 questions left</span>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="chat-pane">
+      <div id="messages" class="messages"></div>
+      <form id="composer" class="composer" autocomplete="off">
+        <input id="input" class="input" type="text"
+               placeholder="Upload your W-2 to begin…" disabled />
+        <button id="send" class="send" type="submit" disabled aria-label="Send">→</button>
+      </form>
+    </section>
+
+    <aside class="ledger-pane">
+      <div class="ledger-card">
+        <div class="ledger-head">
+          <h2>Your 2025 Form 1040</h2>
+          <span class="verified" id="verified" hidden>✓ verified</span>
+        </div>
+        <div class="headline" id="headline">
+          <span class="headline-label" id="headline-label">Let's get started</span>
+          <span class="headline-amount" id="headline-amount">—</span>
+        </div>
+        <ul class="lines" id="ledger-lines"></ul>
+        <a class="download" id="download" hidden>↓ Download your Form 1040</a>
+        <p class="disclaimer">Educational demo — fake data only, <strong>not tax advice</strong>, not for real filing.</p>
+      </div>
+
+      <button class="activity-toggle" id="activity-toggle" aria-expanded="false">
+        <span>Agent activity</span><span class="chev">▸</span>
+      </button>
+      <div class="activity" id="activity" hidden></div>
+    </aside>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
