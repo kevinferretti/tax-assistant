@@ -229,13 +229,20 @@ def _compute_tax(session) -> dict:
     session.record(TAX_COMPUTED,
                    f"Computed 1040: taxable ${res.amt('15'):,.0f}, tax ${res.amt('24'):,.0f}, "
                    + (f"refund ${res.refund:,.0f}." if res.refund else f"owe ${res.amount_owed:,.0f}."),
-                   summary={k: str(v.amount) for k, v in res.lines.items()})
+                   lines={k: str(v.amount) for k, v in res.lines.items()})
     session.record(VERIFICATION,
                    "Verification passed." if vr.passed else "Verification FAILED.",
                    passed=vr.passed, checks=[c.name for c in vr.checks],
                    failures=[{"name": c.name, "detail": c.detail} for c in vr.failures])
+    out = _result_summary(res)
+    out["verified"] = vr.passed
+    out["assumed_defaults"] = [] if state.filing_status else ["filing_status=single"]
+    return out
+
+
+def _result_summary(res) -> dict:
     return {
-        "filing_status": facts.filing_status,
+        "filing_status": res.facts.filing_status,
         "taxable_income": str(res.amt("15")),
         "total_tax": str(res.amt("24")),
         "total_payments": str(res.amt("33")),
@@ -244,8 +251,6 @@ def _compute_tax(session) -> dict:
         "eitc": str(res.amt("27")),
         "child_tax_credit": str(res.amt("19")),
         "additional_child_tax_credit": str(res.amt("28")),
-        "verified": vr.passed,
-        "assumed_defaults": [] if state.filing_status else ["filing_status=single"],
     }
 
 
@@ -263,8 +268,10 @@ def _generate_pdf(session) -> dict:
     filename = f"Form1040_2025_{name}.pdf"
     token = session.add_pdf(pdf_bytes, filename)
     session.record(PDF_GENERATED, f"Generated {filename}.", token=token, filename=filename)
-    return {"download_token": token, "filename": filename,
-            "download_url": f"/api/download/{token}", "verified": True}
+    out = {"download_token": token, "filename": filename,
+           "download_url": f"/api/download/{token}", "verified": True}
+    out.update(_result_summary(res))  # so the UI ledger fills even if compute wasn't called
+    return out
 
 
 def _state_summary(state) -> str:

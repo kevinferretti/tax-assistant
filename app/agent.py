@@ -159,7 +159,7 @@ def run_turn(session, user_text: str | None, *, just_uploaded: bool = False):
             _tool_reply(session, tc["id"], result)
             yield {"type": "tool", "name": name, "status": "done",
                    "ok": "error" not in result}
-            if name == "compute_tax" and "refund" in result:
+            if name in ("compute_tax", "generate_1040_pdf") and "refund" in result:
                 yield {"type": "state", "result": result}
             if name == "generate_1040_pdf" and result.get("download_token"):
                 yield {"type": "pdf", "token": result["download_token"],
