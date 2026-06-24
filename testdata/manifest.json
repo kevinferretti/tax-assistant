@@ -1,0 +1,295 @@
+{
+  "note": "Fake W-2 test data. No real PII. SSNs use the reserved 555-xx-xxxx example range. For testing only \u2014 not for any real filing.",
+  "tax_year": 2025,
+  "count": 8,
+  "profiles": [
+    {
+      "id": "01_single_40k_baseline",
+      "scenario": "Canonical case: single filer, ~$40k wages, withholding set to produce a small refund. The happy path.",
+      "expected_filing_status": "single",
+      "pdf": "w2_pdfs/01_single_40k_baseline.pdf",
+      "image": "w2_images/01_single_40k_baseline.png",
+      "employee": {
+        "name": "Jordan A. Avery",
+        "ssn": "555-12-3456",
+        "address": "142 Maple Street, Apt 3B, Columbus, OH 43215"
+      },
+      "employer": {
+        "name": "Buckeye Retail Group LLC",
+        "ein": "34-1928374",
+        "address": "800 Commerce Way, Columbus, OH 43219"
+      },
+      "ground_truth_boxes": {
+        "box1_wages": 40000.0,
+        "box2_fed_withheld": 3180.0,
+        "box3_ss_wages": 40000.0,
+        "box4_ss_tax": 2480.0,
+        "box5_medicare_wages": 40000.0,
+        "box6_medicare_tax": 580.0,
+        "box10_dependent_care": 0.0,
+        "box12": [],
+        "box13_retirement_plan": false,
+        "box14": [],
+        "box15_state": "OH",
+        "box15_state_employer_id": "OH-558812",
+        "box16_state_wages": 40000.0,
+        "box17_state_tax": 612.0
+      },
+      "blanked_on_form": []
+    },
+    {
+      "id": "02_single_38k_no_state_tax",
+      "scenario": "Single, ~$38k, employer in Texas (no state income tax). Boxes 15-17 effectively empty \u2014 tests handling of no-state-tax W-2s.",
+      "expected_filing_status": "single",
+      "pdf": "w2_pdfs/02_single_38k_no_state_tax.pdf",
+      "image": "w2_images/02_single_38k_no_state_tax.png",
+      "employee": {
+        "name": "Marcus Lee Tran",
+        "ssn": "555-22-7788",
+        "address": "2207 Bluebonnet Ln, Austin, TX 78704"
+      },
+      "employer": {
+        "name": "Lone Star Logistics Inc",
+        "ein": "74-5566778",
+        "address": "500 Industrial Pkwy, Austin, TX 78744"
+      },
+      "ground_truth_boxes": {
+        "box1_wages": 38250.0,
+        "box2_fed_withheld": 2910.0,
+        "box3_ss_wages": 38250.0,
+        "box4_ss_tax": 2371.5,
+        "box5_medicare_wages": 38250.0,
+        "box6_medicare_tax": 554.62,
+        "box10_dependent_care": 0.0,
+        "box12": [],
+        "box13_retirement_plan": false,
+        "box14": [],
+        "box15_state": "",
+        "box15_state_employer_id": "",
+        "box16_state_wages": 0.0,
+        "box17_state_tax": 0.0
+      },
+      "blanked_on_form": []
+    },
+    {
+      "id": "03_mfj_42k_primary_earner",
+      "scenario": "Married filing jointly: this is the primary earner's W-2 (~$42k). Tests that filing status changes the standard deduction and tax. Assistant should ask about a spouse.",
+      "expected_filing_status": "married_filing_jointly",
+      "pdf": "w2_pdfs/03_mfj_42k_primary_earner.pdf",
+      "image": "w2_images/03_mfj_42k_primary_earner.png",
+      "employee": {
+        "name": "Priya N. Kapoor",
+        "ssn": "555-33-1212",
+        "address": "58 Birchwood Ct, Rochester, NY 14620"
+      },
+      "employer": {
+        "name": "Genesee Community Health Partners",
+        "ein": "16-3344556",
+        "address": "120 Lakeview Ave, Rochester, NY 14608"
+      },
+      "ground_truth_boxes": {
+        "box1_wages": 42400.0,
+        "box2_fed_withheld": 3050.0,
+        "box3_ss_wages": 42400.0,
+        "box4_ss_tax": 2628.8,
+        "box5_medicare_wages": 42400.0,
+        "box6_medicare_tax": 614.8,
+        "box10_dependent_care": 0.0,
+        "box12": [],
+        "box13_retirement_plan": false,
+        "box14": [],
+        "box15_state": "NY",
+        "box15_state_employer_id": "NY-447781",
+        "box16_state_wages": 42400.0,
+        "box17_state_tax": 1510.0
+      },
+      "blanked_on_form": []
+    },
+    {
+      "id": "04_single_45k_401k_deferral",
+      "scenario": "Single, ~$45k gross with a $3,600 pre-tax 401(k) deferral (box 12 code D). Box 1 < boxes 3/5, and box 13 'Retirement plan' is checked. Tests that the agent reads box 1 (not gross) for AGI.",
+      "expected_filing_status": "single",
+      "pdf": "w2_pdfs/04_single_45k_401k_deferral.pdf",
+      "image": "w2_images/04_single_45k_401k_deferral.png",
+      "employee": {
+        "name": "Devon R. Whitfield",
+        "ssn": "555-44-9090",
+        "address": "3391 Cedar Hollow Rd, Raleigh, NC 27604"
+      },
+      "employer": {
+        "name": "Tarheel Software Co",
+        "ein": "56-7788990",
+        "address": "44 Research Dr, Raleigh, NC 27709"
+      },
+      "ground_truth_boxes": {
+        "box1_wages": 41400.0,
+        "box2_fed_withheld": 3240.0,
+        "box3_ss_wages": 45000.0,
+        "box4_ss_tax": 2790.0,
+        "box5_medicare_wages": 45000.0,
+        "box6_medicare_tax": 652.5,
+        "box10_dependent_care": 0.0,
+        "box12": [
+          {
+            "code": "D",
+            "amount": 3600.0
+          },
+          {
+            "code": "DD",
+            "amount": 6840.0
+          }
+        ],
+        "box13_retirement_plan": true,
+        "box14": [],
+        "box15_state": "NC",
+        "box15_state_employer_id": "NC-220145",
+        "box16_state_wages": 41400.0,
+        "box17_state_tax": 1380.0
+      },
+      "blanked_on_form": []
+    },
+    {
+      "id": "05_hoh_36k_dependent_care",
+      "scenario": "Head of household, ~$36k, with $2,500 in box 10 dependent care benefits \u2014 implies a child/dependent. Tests filing status = HoH and that the agent may ask about dependents.",
+      "expected_filing_status": "head_of_household",
+      "pdf": "w2_pdfs/05_hoh_36k_dependent_care.pdf",
+      "image": "w2_images/05_hoh_36k_dependent_care.png",
+      "employee": {
+        "name": "Alicia M. Booker",
+        "ssn": "555-55-3434",
+        "address": "77 Sycamore Ave, Peoria, IL 61604"
+      },
+      "employer": {
+        "name": "Prairie State Hospitality",
+        "ein": "36-2211009",
+        "address": "910 Riverfront Dr, Peoria, IL 61602"
+      },
+      "ground_truth_boxes": {
+        "box1_wages": 34700.0,
+        "box2_fed_withheld": 2180.0,
+        "box3_ss_wages": 34700.0,
+        "box4_ss_tax": 2151.4,
+        "box5_medicare_wages": 34700.0,
+        "box6_medicare_tax": 503.15,
+        "box10_dependent_care": 2500.0,
+        "box12": [],
+        "box13_retirement_plan": false,
+        "box14": [],
+        "box15_state": "IL",
+        "box15_state_employer_id": "IL-339204",
+        "box16_state_wages": 34700.0,
+        "box17_state_tax": 1080.0
+      },
+      "blanked_on_form": []
+    },
+    {
+      "id": "06_single_41k_pretax_health",
+      "scenario": "Single, ~$41k gross with $2,400 pre-tax health premiums (section 125). Box 1 reduced AND boxes 3/5 reduced \u2014 different from the 401(k) case. Tests correct reading of reduced SS/Medicare wages.",
+      "expected_filing_status": "single",
+      "pdf": "w2_pdfs/06_single_41k_pretax_health.pdf",
+      "image": "w2_images/06_single_41k_pretax_health.png",
+      "employee": {
+        "name": "Samantha K. Ortiz",
+        "ssn": "555-66-5656",
+        "address": "615 Willow Bend, Tempe, AZ 85281"
+      },
+      "employer": {
+        "name": "Desert Valley Schools District",
+        "ein": "86-1100220",
+        "address": "2300 University Dr, Tempe, AZ 85281"
+      },
+      "ground_truth_boxes": {
+        "box1_wages": 38800.0,
+        "box2_fed_withheld": 2760.0,
+        "box3_ss_wages": 38800.0,
+        "box4_ss_tax": 2405.6,
+        "box5_medicare_wages": 38800.0,
+        "box6_medicare_tax": 562.6,
+        "box10_dependent_care": 0.0,
+        "box12": [],
+        "box13_retirement_plan": false,
+        "box14": [
+          {
+            "label": "AZ SUI",
+            "amount": 41.2
+          }
+        ],
+        "box15_state": "AZ",
+        "box15_state_employer_id": "AZ-771230",
+        "box16_state_wages": 38800.0,
+        "box17_state_tax": 905.0
+      },
+      "blanked_on_form": []
+    },
+    {
+      "id": "07_single_39k_underwithheld",
+      "scenario": "Single, ~$39k but deliberately UNDER-withheld (box 2 low), so the taxpayer owes a small balance due instead of a refund. Tests the 'amount you owe' path on the 1040.",
+      "expected_filing_status": "single",
+      "pdf": "w2_pdfs/07_single_39k_underwithheld.pdf",
+      "image": "w2_images/07_single_39k_underwithheld.png",
+      "employee": {
+        "name": "Eli J. Nakamura",
+        "ssn": "555-77-1001",
+        "address": "1820 Foster St, Portland, OR 97227"
+      },
+      "employer": {
+        "name": "Rose City Bicycle Works",
+        "ein": "93-4455661",
+        "address": "55 Industrial Loop, Portland, OR 97210"
+      },
+      "ground_truth_boxes": {
+        "box1_wages": 39100.0,
+        "box2_fed_withheld": 1650.0,
+        "box3_ss_wages": 39100.0,
+        "box4_ss_tax": 2424.2,
+        "box5_medicare_wages": 39100.0,
+        "box6_medicare_tax": 566.95,
+        "box10_dependent_care": 0.0,
+        "box12": [],
+        "box13_retirement_plan": false,
+        "box14": [],
+        "box15_state": "OR",
+        "box15_state_employer_id": "OR-118827",
+        "box16_state_wages": 39100.0,
+        "box17_state_tax": 1640.0
+      },
+      "blanked_on_form": []
+    },
+    {
+      "id": "08_single_messy_partial",
+      "scenario": "STRETCH/robustness: a messy, partial W-2. Box 2 (federal withholding) and the control number are missing/blank, and amounts use an inconsistent format. Tests graceful recovery and follow-up questions when the input is incomplete.",
+      "expected_filing_status": "single",
+      "pdf": "w2_pdfs/08_single_messy_partial.pdf",
+      "image": "w2_images/08_single_messy_partial.png",
+      "employee": {
+        "name": "Casey Morgan",
+        "ssn": "555-88-2002",
+        "address": "404 Elm St, Dayton, OH 45402"
+      },
+      "employer": {
+        "name": "Gem City Diner",
+        "ein": "31-9988776",
+        "address": "12 Main St, Dayton, OH 45402"
+      },
+      "ground_truth_boxes": {
+        "box1_wages": 37800.0,
+        "box2_fed_withheld": 0.0,
+        "box3_ss_wages": 37800.0,
+        "box4_ss_tax": 2343.6,
+        "box5_medicare_wages": 37800.0,
+        "box6_medicare_tax": 548.1,
+        "box10_dependent_care": 0.0,
+        "box12": [],
+        "box13_retirement_plan": false,
+        "box14": [],
+        "box15_state": "OH",
+        "box15_state_employer_id": "OH-558812",
+        "box16_state_wages": 37800.0,
+        "box17_state_tax": 540.0
+      },
+      "blanked_on_form": [
+        "box2_fed_withheld"
+      ]
+    }
+  ]
+}
