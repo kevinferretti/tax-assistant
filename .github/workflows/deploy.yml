@@ -1,0 +1,107 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tax-assistant-deploy
+  cancel-in-progress: true
+
+env:
+  DEPLOY_HOST: tax.kevinferretti.com
+  DEPLOY_USER: codex
+  DEPLOY_ROOT: /opt/tax-assistant
+  APP_PORT: "8000"
+  PUBLIC_URL: https://tax.kevinferretti.com
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      OVH_SSH_PRIVATE_KEY: ${{ secrets.OVH_SSH_PRIVATE_KEY }}
+      OVH_SSH_KNOWN_HOSTS: ${{ secrets.OVH_SSH_KNOWN_HOSTS }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      DEPLOY_SECRETS_CONFIGURED: ${{ secrets.OVH_SSH_PRIVATE_KEY != '' && secrets.OVH_SSH_KNOWN_HOSTS != '' && secrets.OPENAI_API_KEY != '' }}
+
+    steps:
+      - name: Note if secrets missing
+        if: env.DEPLOY_SECRETS_CONFIGURED != 'true'
+        run: echo "::notice::Deploy skipped — set OVH_SSH_PRIVATE_KEY, OVH_SSH_KNOWN_HOSTS, OPENAI_API_KEY repo secrets."
+
+      - name: Checkout
+        if: env.DEPLOY_SECRETS_CONFIGURED == 'true'
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        if: env.DEPLOY_SECRETS_CONFIGURED == 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Verify (deterministic tests only)
+        if: env.DEPLOY_SECRETS_CONFIGURED == 'true'
+        run: |
+          python -m pip install -r requirements-dev.txt
+          python -m pytest -q
+
+      - name: Prepare SSH
+        if: env.DEPLOY_SECRETS_CONFIGURED == 'true'
+        run: |
+          set -euo pipefail
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$OVH_SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$OVH_SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Package release
+        if: env.DEPLOY_SECRETS_CONFIGURED == 'true'
+        run: |
+          set -euo pipefail
+          tar --exclude='.git' --exclude='.venv' --exclude='.env' --exclude='.env.*' \
+              --exclude='__pycache__' --exclude='.pytest_cache' --exclude='*.tgz' \
+              -czf "release-${GITHUB_SHA}.tgz" .
+          printf 'OPENAI_API_KEY=%s\nPORT=%s\n' "$OPENAI_API_KEY" "$APP_PORT" > tax-assistant.env
+          chmod 600 tax-assistant.env
+
+      - name: Upload release
+        if: env.DEPLOY_SECRETS_CONFIGURED == 'true'
+        run: |
+          set -euo pipefail
+          scp -i ~/.ssh/deploy_key "release-${GITHUB_SHA}.tgz" tax-assistant.env \
+            "$DEPLOY_USER@$DEPLOY_HOST:/tmp/"
+
+      - name: Activate release
+        if: env.DEPLOY_SECRETS_CONFIGURED == 'true'
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/deploy_key "$DEPLOY_USER@$DEPLOY_HOST" \
+            "GITHUB_SHA='$GITHUB_SHA' DEPLOY_ROOT='$DEPLOY_ROOT' APP_PORT='$APP_PORT' bash -s" <<'REMOTE'
+          set -euo pipefail
+          sudo mkdir -p "$DEPLOY_ROOT/releases" "$DEPLOY_ROOT/shared"
+          sudo chown -R "$USER:$USER" "$DEPLOY_ROOT"
+          release="$DEPLOY_ROOT/releases/$GITHUB_SHA"
+          mkdir -p "$release"
+          tar -xzf "/tmp/release-$GITHUB_SHA.tgz" -C "$release"
+          mv /tmp/tax-assistant.env "$DEPLOY_ROOT/shared/.env"
+          chmod 600 "$DEPLOY_ROOT/shared/.env"
+          ln -sfn "$release" "$DEPLOY_ROOT/current"
+          docker network create edge-proxy >/dev/null 2>&1 || true
+          cd "$release"
+          docker compose -p tax-assistant -f deploy/ovh/docker-compose.yml up -d --build --remove-orphans
+          for i in $(seq 1 20); do
+            if docker exec tax-assistant-app-1 python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:'+'$APP_PORT'+'/api/health').status==200 else 1)"; then break; fi
+            [ "$i" = 20 ] && { echo "unhealthy"; docker compose -p tax-assistant -f deploy/ovh/docker-compose.yml logs --tail=80 app; exit 1; }
+            sleep 2
+          done
+          ls -1dt "$DEPLOY_ROOT"/releases/*/ | tail -n +4 | xargs -r rm -rf
+          REMOTE
+
+      - name: Verify public endpoint
+        if: env.DEPLOY_SECRETS_CONFIGURED == 'true'
+        run: curl --fail --retry 10 --retry-delay 3 --retry-all-errors "$PUBLIC_URL/api/health"
