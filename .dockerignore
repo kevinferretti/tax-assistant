@@ -1,0 +1,13 @@
+.git
+.venv
+__pycache__
+*.pyc
+.pytest_cache
+tests
+evals
+.env
+.env.*
+!.env.example
+assets/_*
+*.tgz
+.claude

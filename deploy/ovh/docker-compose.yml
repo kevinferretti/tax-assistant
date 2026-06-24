@@ -1,0 +1,28 @@
+name: tax-assistant
+
+services:
+  app:
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+    image: tax-assistant:latest
+    restart: unless-stopped
+    env_file:
+      - ${TAX_ASSISTANT_ENV_FILE:-/opt/tax-assistant/shared/.env}
+    environment:
+      PORT: "8000"
+    expose:
+      - "8000"
+    networks:
+      edge-proxy:
+        aliases:
+          - tax-assistant
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/api/health').status==200 else 1)\""]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+networks:
+  edge-proxy:
+    external: true
